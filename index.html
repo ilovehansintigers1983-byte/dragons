@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中日ドラゴンズ 特設ページ</title>
+<style>
+  :root {
+    --d-blue: #0a7bd4;
+    --d-navy: #030b18;
+    --d-white: #ffffff;
+    --gray: #1d2836;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+    background: var(--d-navy);
+    color: var(--d-white);
+  }
+  /* 固定背景（ドーム夜空風グラデーション） */
+  #bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(ellipse at 50% 110%, rgba(10,123,212,0.35), transparent 60%),
+      linear-gradient(180deg, #04101f 0%, #071a30 55%, #0a2440 100%);
+    background-color: var(--d-navy);
+  }
+  header {
+    background: repeating-linear-gradient(90deg,
+      var(--d-navy) 0 40px, #0a1626 40px 80px);
+    border-bottom: 6px solid var(--d-blue);
+    padding: 28px 20px 20px;
+    text-align: center;
+  }
+  header h1 {
+    color: var(--d-blue);
+    font-size: 2.2rem;
+    letter-spacing: 0.08em;
+    text-shadow: 2px 2px 0 #000;
+  }
+  header p { color: #ccc; margin-top: 6px; font-size: 0.9rem; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+
+  h2 {
+    color: var(--d-blue);
+    border-left: 8px solid var(--d-blue);
+    padding-left: 12px;
+    margin: 32px 0 16px;
+    font-size: 1.4rem;
+  }
+
+  /* 次の試合 */
+  .next-game {
+    background: var(--gray);
+    border: 2px solid var(--d-blue);
+    border-radius: 10px;
+    padding: 18px 20px;
+    text-align: center;
+  }
+  .matchup { font-size: 1.6rem; font-weight: bold; margin-bottom: 8px; }
+  .matchup .team-name { color: var(--d-blue); }
+  .matchup .vs { color: #888; font-size: 1rem; margin: 0 14px; }
+  .game-detail { font-size: 0.95rem; margin-bottom: 10px; }
+  .broadcast { font-size: 0.82rem; color: #ccc; line-height: 2; }
+
+  /* 順位表 */
+  .standings-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .stat-card {
+    background: var(--gray);
+    border-top: 4px solid var(--d-blue);
+    border-radius: 8px;
+    padding: 14px 22px;
+    text-align: center;
+    flex: 1;
+    min-width: 120px;
+  }
+  .stat-card .num { font-size: 2rem; font-weight: bold; color: var(--d-blue); }
+  .stat-card .label { font-size: 0.8rem; color: #bbb; margin-top: 4px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--gray);
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 0.92rem;
+  }
+  th {
+    background: var(--d-blue);
+    color: var(--d-white);
+    padding: 8px 6px;
+  }
+  td { padding: 8px 6px; text-align: center; border-bottom: 1px solid #2c3a4d; }
+  tr.ours { background: #062c4d; font-weight: bold; }
+  tr.ours td { color: #6ec1ff; }
+
+  /* 選手グリッド */
+  .players {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px;
+  }
+  .player-card {
+    background: var(--gray);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    border: 2px solid transparent;
+  }
+  .player-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--d-blue);
+    box-shadow: 0 6px 16px rgba(10,123,212,0.35);
+  }
+  .avatar {
+    height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: repeating-linear-gradient(135deg,
+      #0c1a2c 0 18px, #122238 18px 36px);
+    border-bottom: 3px solid var(--d-blue);
+  }
+  .avatar .initials {
+    font-size: 2.4rem;
+    font-weight: bold;
+    color: var(--d-blue);
+    text-shadow: 2px 2px 0 #000;
+  }
+  .avatar .number {
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--d-white);
+    background: var(--d-navy);
+    border: 1px solid var(--d-blue);
+    border-radius: 4px;
+    padding: 1px 7px;
+  }
+  .player-info { padding: 10px 12px 12px; }
+  .player-info .name { font-weight: bold; font-size: 1rem; }
+  .player-info .pos { color: var(--d-blue); font-size: 0.75rem; margin: 2px 0 8px; }
+  .player-info .stats { font-size: 0.78rem; color: #ccc; line-height: 1.55; }
+  .song-link {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 0.75rem;
+    color: var(--d-white);
+    background: var(--d-blue);
+    border-radius: 12px;
+    padding: 3px 10px;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  .song-link:hover { background: #3f9de4; }
+
+  /* モーダル */
+  #modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 10;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  #modal-overlay.open { display: flex; }
+  #modal {
+    background: var(--gray);
+    border: 3px solid var(--d-blue);
+    border-radius: 12px;
+    max-width: 560px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 26px;
+    position: relative;
+  }
+  #modal h3 { color: var(--d-blue); font-size: 1.5rem; margin-bottom: 4px; }
+  #modal .sub { color: #bbb; font-size: 0.85rem; margin-bottom: 14px; }
+  #modal .section-title {
+    color: var(--d-blue);
+    font-size: 0.95rem;
+    margin: 14px 0 6px;
+    border-bottom: 1px solid #445;
+    padding-bottom: 3px;
+  }
+  #modal p { font-size: 0.9rem; line-height: 1.7; color: #ddd; }
+  #modal-close {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    background: none;
+    border: none;
+    color: var(--d-blue);
+    font-size: 1.6rem;
+    cursor: pointer;
+  }
+  footer {
+    text-align: center;
+    padding: 24px;
+    color: #777;
+    font-size: 0.75rem;
+    border-top: 2px solid var(--d-blue);
+    margin-top: 40px;
+  }
+
+  /* 表は狭い画面で横スクロール */
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+  }
+  .table-wrap table { min-width: 500px; }
+
+  /* スマホ向け調整 */
+  @media (max-width: 600px) {
+    header { padding: 20px 12px 14px; }
+    header h1 { font-size: 1.45rem; letter-spacing: 0.02em; }
+    header p { font-size: 0.78rem; }
+    .container { padding: 16px 10px; }
+    h2 { font-size: 1.15rem; margin: 24px 0 12px; }
+    .matchup { font-size: 1.25rem; }
+    .matchup .vs { margin: 0 8px; }
+    .game-detail { font-size: 0.85rem; }
+    .broadcast { font-size: 0.75rem; line-height: 1.9; }
+    .standings-summary { gap: 8px; }
+    .stat-card { padding: 10px 8px; min-width: calc(50% - 8px); }
+    .stat-card .num { font-size: 1.45rem; }
+    .stat-card .label { font-size: 0.7rem; }
+    th, td { padding: 6px 4px; font-size: 0.78rem; }
+    .players { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .avatar { height: 96px; }
+    .avatar .initials { font-size: 1.7rem; }
+    .avatar .number { font-size: 0.85rem; }
+    .player-info { padding: 8px 10px 10px; }
+    .player-info .name { font-size: 0.9rem; }
+    .player-info .stats { font-size: 0.72rem; }
+    .song-link { font-size: 0.7rem; padding: 3px 8px; }
+    #modal { padding: 18px 16px; max-height: 88vh; }
+    #modal h3 { font-size: 1.2rem; }
+    #modal p { font-size: 0.85rem; }
+  }
+</style>
+</head>
+<body>
+<div id="bg"></div>
+
+<header>
+  <h1>🐉 中日ドラゴンズ 特設ページ</h1>
+  <p>2026年シーズン ｜ <span id="data-date">データ更新中…</span></p>
+</header>
+
+<div class="container">
+
+  <h2>次の試合</h2>
+  <div class="next-game">
+    <div class="matchup" id="ng-matchup">
+      <span class="team team-name">中日</span>
+      <span class="vs">VS</span>
+      <span class="team">広島</span>
+    </div>
+    <div class="game-detail" id="ng-detail">
+      7月11日（土） 14:00 開始 ｜ バンテリンドーム
+    </div>
+    <div class="broadcast">
+      <span id="ng-broadcast">📺 主な中継（中日主催の通常パターン）: 東海テレビなど東海民放 ／ J SPORTS（CS） ／ DAZN（ネット配信）</span><br>
+      <a href="https://dragons.jp/" target="_blank" rel="noopener" class="song-link">当日の確定放送予定は球団公式サイトで</a>
+    </div>
+  </div>
+
+  <div class="table-wrap" style="margin-top:14px;">
+  <table>
+    <thead>
+      <tr><th>日付</th><th>対戦カード</th><th>球場</th><th>開始</th></tr>
+    </thead>
+    <tbody id="schedule-body">
+      <tr class="ours"><td>7/11（土）</td><td>中日 - 広島</td><td>バンテリンドーム</td><td>14:00</td></tr>
+      <tr><td>7/12（日）</td><td>中日 - 広島</td><td>バンテリンドーム</td><td>13:30</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>今シーズンの成績</h2>
+  <div class="standings-summary">
+    <div class="stat-card"><div class="num" id="sum-rank">6位</div><div class="label">セ・リーグ順位</div></div>
+    <div class="stat-card"><div class="num" id="sum-wins">29勝</div><div class="label" id="sum-ld">46敗 1分</div></div>
+    <div class="stat-card"><div class="num" id="sum-pct">.387</div><div class="label">勝率</div></div>
+    <div class="stat-card"><div class="num" id="sum-games">76</div><div class="label" id="sum-games-label">試合消化（残り67試合）</div></div>
+  </div>
+
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>順位</th><th>チーム</th><th>試合</th><th>勝</th><th>負</th><th>分</th><th>勝率</th><th>差</th></tr>
+    </thead>
+    <tbody id="standings-body">
+      <tr><td>1</td><td>阪神タイガース</td><td>73</td><td>39</td><td>33</td><td>1</td><td>.542</td><td>--</td></tr>
+      <tr><td>1</td><td>読売ジャイアンツ</td><td>74</td><td>39</td><td>33</td><td>2</td><td>.542</td><td>--</td></tr>
+      <tr><td>3</td><td>東京ヤクルトスワローズ</td><td>74</td><td>38</td><td>35</td><td>1</td><td>.521</td><td>1.5</td></tr>
+      <tr><td>4</td><td>横浜DeNAベイスターズ</td><td>75</td><td>30</td><td>42</td><td>3</td><td>.417</td><td>9.0</td></tr>
+      <tr><td>5</td><td>広島東洋カープ</td><td>72</td><td>28</td><td>40</td><td>4</td><td>.412</td><td>9.0</td></tr>
+      <tr class="ours"><td>6</td><td>中日ドラゴンズ</td><td>76</td><td>29</td><td>46</td><td>1</td><td>.387</td><td>11.5</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>野手陣</h2>
+  <div class="players" id="batters"></div>
+
+  <h2>投手陣</h2>
+  <div class="players" id="pitchers"></div>
+
+</div>
+
+<div id="modal-overlay">
+  <div id="modal">
+    <button id="modal-close">×</button>
+    <h3 id="modal-name"></h3>
+    <div class="sub" id="modal-sub"></div>
+    <div class="section-title">今シーズン成績</div>
+    <p id="modal-season"></p>
+    <div class="section-title">経歴</div>
+    <p id="modal-career"></p>
+    <div class="section-title">過去の主な成績・実績</div>
+    <p id="modal-history"></p>
+    <p id="modal-song" style="margin-top:16px;"></p>
+  </div>
+</div>
+
+<footer>
+  成績データ出典: NPB.jp 日本野球機構（ページを開くたびに自動更新）｜ 個人利用の非公式ファンページ
+</footer>
+
+<script>
+const batters = [
+  { name: "岡林 勇希", initials: "岡林", number: "1", pos: "外野手",
+    season: "32試合 打率.256 0本塁打 8打点 32安打 1盗塁",
+    career: "菰野高校から2019年ドラフト5位で中日入団。三重県出身。広い守備範囲と俊足巧打が武器の不動のリードオフマン。",
+    history: "2022年に最多安打のタイトルを獲得し、ゴールデングラブ賞も複数回受賞。中日の顔として毎年安打を量産する若きスター。" },
+  { name: "田中 幹也", initials: "田中", number: "2", pos: "内野手",
+    season: "66試合 打率.241 0本塁打 11打点 48安打 7盗塁",
+    career: "亜細亜大学から2022年ドラフト6位で中日入団。難病を乗り越えてプロ入りした不屈の小兵内野手。",
+    history: "小柄ながら守備範囲の広い二遊間の名手として一軍に定着。今季はチームトップの7盗塁と機動力でも貢献している。" },
+  { name: "高橋 周平", initials: "周平", number: "3", pos: "内野手",
+    season: "37試合 打率.278 0本塁打 5打点 22安打",
+    career: "東海大甲府高校から2011年ドラフト1位で中日入団。神奈川県出身。柔らかいバッティングが持ち味のベテラン内野手。",
+    history: "2019年にはゴールデングラブ賞（三塁手）を獲得。長年中日の内野を支え、勝負強い中距離打者として実績を積み重ねてきた。" },
+  { name: "カリステ", initials: "C", number: "4", pos: "内野手",
+    season: "26試合 打率.197 1本塁打 3打点",
+    career: "ドミニカ共和国出身。内外野を守れるユーティリティな外国人選手。",
+    history: "2023年から中日でプレーし、複数ポジションをこなす貴重な戦力として起用され続けている。" },
+  { name: "村松 開人", initials: "村松", number: "5", pos: "内野手",
+    season: "78試合 打率.240 3本塁打 29打点 64安打 4盗塁",
+    career: "静岡高校→明治大学から2022年ドラフト2位で中日入団。静岡県出身。堅実な守備と粘り強い打撃の二塁手。",
+    history: "入団以来出場を増やし、今季はチーム最多クラスの78試合に出場。二塁のレギュラーとして29打点と勝負強さを発揮中。" },
+  { name: "福永 裕基", initials: "福永", number: "7", pos: "内野手",
+    season: "52試合 打率.229 1本塁打 8打点 36安打 6盗塁",
+    career: "天理高校→専修大学→日本新薬から2022年ドラフト7位で中日入団。社会人経由の苦労人内野手。",
+    history: "プロ1年目から一軍で活躍し、パンチ力と走力を兼ね備えた内野手として定着。今季も6盗塁と機動力を見せる。" },
+  { name: "大島 洋平", initials: "大島", number: "8", pos: "外野手",
+    season: "21試合 打率.194 0本塁打 2打点 12安打 1盗塁",
+    career: "享栄高校→駒澤大学→日本生命から2009年ドラフト5位で中日入団。愛知県出身。通算2000安打を達成したレジェンド。",
+    history: "2019年に最多安打、ゴールデングラブ賞5回、2022年に名球会入りの2000安打達成。40歳を超えてなお現役を続けるチームの精神的支柱。" },
+  { name: "石伊 雄太", initials: "石伊", number: "9", pos: "捕手",
+    season: "59試合 打率.266 5本塁打 19打点 54安打",
+    career: "近大工学部から日本生命を経て2024年ドラフト4位で中日入団。強肩と打てる捕手として期待の新戦力。",
+    history: "ルーキーイヤーから正捕手の座を掴み、今季は打率.266・5本塁打と攻守で存在感を発揮。中日の扇の要に成長した。" },
+  { name: "サノー", initials: "S", number: "23", pos: "内野手",
+    season: "37試合 打率.241 11本塁打 21打点",
+    career: "ドミニカ共和国出身の大型スラッガー。今季支配下登録された長距離砲。",
+    history: "196cm・126kgの巨体から放つパワーが魅力。今季37試合で11本塁打とチーム屈指の長打力を見せている。" },
+  { name: "石川 昂弥", initials: "石川", number: "25", pos: "内野手",
+    season: "42試合 打率.304 5本塁打 20打点 42安打",
+    career: "東邦高校から2019年ドラフト1位で中日入団。愛知県出身。甲子園優勝投手からプロでは打者に専念した地元のスター候補。",
+    history: "度重なる故障を乗り越え、和製大砲として期待され続ける存在。今季は打率.304と打撃開眼の兆しを見せている。" },
+  { name: "ボスラー", initials: "B", number: "24", pos: "外野手",
+    season: "48試合 打率.193 3本塁打 10打点",
+    career: "アメリカ出身の外国人外野手。選球眼とパワーを兼ね備えた左の中距離砲。",
+    history: "メジャー・3A経験を経て中日に加入。出塁能力の高さが持ち味で、クリーンナップ候補として起用されている。" },
+  { name: "ブライト 健太", initials: "ブライト", number: "42", pos: "外野手",
+    season: "5試合 打率.071",
+    career: "上武大学から2021年ドラフト1位で中日入団。ガーナにルーツを持つ身体能力抜群の外野手。",
+    history: "走攻守の高いポテンシャルを武器に一軍定着を目指す。外野の定位置争いに挑戦中。" },
+  { name: "川越 誠司", initials: "川越", number: "44", pos: "外野手",
+    season: "4試合 打率.500 1打点",
+    career: "北海学園大学から西武入団後、中日に移籍。投手出身の異色の外野手で、パンチ力ある左打者。",
+    history: "代打の切り札として勝負強い打撃を披露。今季も限られた打席で結果を残している。" },
+  { name: "土田 龍空", initials: "土田", number: "45", pos: "内野手",
+    season: "26試合 打率.143 2本塁打 3打点",
+    career: "近江高校から2020年ドラフト3位で中日入団。滋賀県出身。華麗な守備が光る遊撃手。",
+    history: "守備力は球団屈指と評され、遊撃のレギュラー獲りに挑み続ける若手。今季はプロ初の複数本塁打を記録。" },
+  { name: "阿部 寿樹", initials: "阿部", number: "48", pos: "内野手",
+    season: "46試合 打率.280 1本塁打 14打点 23安打",
+    career: "明治大学→Hondaから2015年ドラフト5位で中日入団。楽天を経て中日に復帰したベテラン内野手。",
+    history: "2022年には打率3割を記録した実績を持つ勝負強い打撃が武器。ベテランらしい安定感でチームを支える。" },
+  { name: "細川 成也", initials: "細川", number: "55", pos: "外野手",
+    season: "80試合 打率.227 12本塁打 43打点 62安打",
+    career: "明秀日立高校からDeNA入団後、2022年現役ドラフトで中日移籍。移籍を機に大ブレイクした主砲。",
+    history: "移籍1年目の2023年に24本塁打・78打点と大活躍し、現役ドラフトの代表的成功例に。以降も中日の4番格として長打を量産している。今季もチームトップの12本塁打・43打点。" },
+  { name: "花田 旭", initials: "花田", number: "57", pos: "外野手",
+    season: "19試合 打率.226 1本塁打 5打点",
+    career: "大阪商業大学から2023年ドラフト位で中日入団。パワーが魅力の若手外野手。",
+    history: "ファームで長打力を磨き、今季一軍出場を増やしている成長株。" },
+  { name: "山本 泰寛", initials: "山本", number: "60", pos: "内野手",
+    season: "30試合 打率.186 1本塁打 4打点",
+    career: "慶應義塾大学から巨人入団後、阪神を経て中日へ。経験豊富な内野のバックアップ。",
+    history: "複数球団で内野全ポジションを守ってきたユーティリティ性が武器。ベンチワークでもチームに貢献する。" },
+  { name: "板山 祐太郎", initials: "板山", number: "63", pos: "外野手",
+    season: "52試合 打率.248 5本塁打 18打点",
+    career: "亜細亜大学から阪神入団後、中日に移籍した外野手。ガッツあふれるプレースタイルが持ち味。",
+    history: "移籍後に出場機会を掴み、今季はキャリアハイペースの5本塁打。ムードメーカーとしても愛される存在。" },
+  { name: "鵜飼 航丞", initials: "鵜飼", number: "66", pos: "外野手",
+    season: "49試合 打率.245 5本塁打 22打点",
+    career: "中京大学から2021年ドラフト2位で中日入団。愛知県出身。豪快なスイングが魅力の和製大砲候補。",
+    history: "持ち前の長打力で一軍定着を果たしつつあり、今季は49試合で5本塁打22打点と結果を出し始めている。" },
+  { name: "尾田 剛樹", initials: "尾田", number: "00", pos: "外野手",
+    season: "26試合 4盗塁",
+    career: "俊足が武器の外野手。代走・守備固めのスペシャリストとして一軍に定着。",
+    history: "今季26試合で4盗塁。終盤の勝負どころでスピードを発揮する切り札的存在。" },
+  { name: "辻本 倫太郎", initials: "辻本", number: "0", pos: "内野手",
+    season: "8試合 打率.091",
+    career: "仙台大学から2023年ドラフト3位で中日入団。北海道出身。守備に定評のある小柄な内野手。",
+    history: "堅実な守備を武器に内野のバックアップとして経験を積んでいる。" },
+  { name: "木下 拓哉", initials: "木下", number: "35", pos: "捕手",
+    season: "16試合 打率.250 1打点 12安打",
+    career: "高知高校→法政大学→トヨタ自動車から2016年ドラフト3位で中日入団。高知県出身。経験豊富なベテラン捕手。",
+    history: "長く中日の正捕手を務め、勝負強い打撃と巧みなリードで投手陣を支えてきた。若手捕手の台頭後もベテランとして扇の要を担う。" },
+  { name: "加藤 匠馬", initials: "加藤", number: "49", pos: "捕手",
+    season: "21試合 打率.132 1打点",
+    career: "青山学院大学から2015年ドラフト2位で中日入団。三重県出身。強肩が最大の武器の守備型捕手。",
+    history: "二塁送球1.8秒台の強肩は球界トップクラス。ロッテを経て中日に復帰し、守備固めの切り札として活躍。" },
+  { name: "石橋 康太", initials: "石橋", number: "58", pos: "捕手",
+    season: "1試合",
+    career: "関東第一高校から2018年ドラフト4位で中日入団。打てる捕手として期待される若手。",
+    history: "ファームで打撃を磨きながら一軍出場のチャンスをうかがう。" },
+  { name: "味谷 大誠", initials: "味谷", number: "43", pos: "捕手",
+    season: "4試合 打率.250",
+    career: "花巻東高校から2021年ドラフト育成で中日入団後、支配下登録を勝ち取った若手捕手。",
+    history: "今季一軍初出場・初安打を記録。次世代の捕手候補として成長中。" },
+  { name: "知野 直人", initials: "知野", number: "65", pos: "内野手",
+    season: "6試合",
+    career: "DeNAから移籍した身体能力の高い内野手。",
+    history: "内外野を守れるユーティリティ性を武器に出場機会を狙う。" },
+  { name: "樋口 正修", initials: "樋口", number: "97", pos: "内野手",
+    season: "5試合 打率.333 2盗塁",
+    career: "駿河台大学から独立リーグを経て中日入団。俊足が武器の内野手。",
+    history: "今季一軍で5試合に出場し2盗塁。スピードでアピールを続けている。" },
+  { name: "ロドリゲス", initials: "R", number: "95", pos: "内野手",
+    season: "1試合",
+    career: "ドミニカ共和国出身の若手内野手。",
+    history: "今季一軍デビュー。パワーと強肩が魅力の育成出身選手。" },
+];
+
+const pitchers = [
+  { name: "髙橋 宏斗", initials: "髙橋", number: "19", pos: "投手（先発）",
+    season: "9登板 1勝6敗 防御率4.86 58奪三振",
+    career: "中京大中京高校から2020年ドラフト1位で中日入団。愛知県出身。最速155km/h超の速球とスプリットを武器とするエース。",
+    history: "2023年WBC日本代表の優勝メンバー。2024年には最優秀防御率のタイトルを獲得した中日のエース格。今季は黒星が先行するも、9試合で58奪三振と球威は健在。" },
+  { name: "大野 雄大", initials: "大野", number: "22", pos: "投手（先発・左腕）",
+    season: "13登板 7勝4敗 防御率1.84 64奪三振",
+    career: "京都外大西高校→佛教大学から2010年ドラフト1位で中日入団。京都府出身。通算100勝を超えるチームの大黒柱左腕。",
+    history: "2019年最優秀防御率、2020年沢村賞・ノーヒットノーランと数々の勲章を持つ大エース。ベテランとなった今季も7勝・防御率1.84と圧巻の復活投球でチームを牽引する。" },
+  { name: "柳 裕也", initials: "柳", number: "17", pos: "投手（先発）",
+    season: "15登板 4勝2敗 防御率2.49 84奪三振",
+    career: "横浜高校→明治大学から2016年ドラフト1位で中日入団。神奈川県出身。精密な制球と投球術が光る右腕。",
+    history: "2021年に最優秀防御率と最多奪三振の二冠を獲得。毎年ローテーションの軸として安定した成績を残し、今季もチームトップの84奪三振。" },
+  { name: "金丸 夢斗", initials: "金丸", number: "21", pos: "投手（先発・左腕）",
+    season: "14登板 5勝6敗 防御率2.52 77奪三振",
+    career: "関西大学から2024年ドラフト1位で中日入団。大学屈指の左腕として鳴り物入りでプロ入りした逸材。",
+    history: "ルーキーイヤーから先発ローテーションに定着。2年目の今季は14試合で77奪三振・防御率2.52と、エース候補として急成長中。" },
+  { name: "松山 晋也", initials: "松山", number: "90", pos: "投手（クローザー）",
+    season: "24登板 1勝2敗 16セーブ 防御率1.59",
+    career: "八戸学院大学から2022年育成ドラフト1位で中日入団。青森県出身。最速159km/hの剛腕クローザー。",
+    history: "育成出身から守護神まで上り詰めたシンデレラストーリーの持ち主。2024年から抑えを務め、今季もすでに16セーブと絶対的守護神として君臨する。" },
+  { name: "吉田 聖弥", initials: "吉田", number: "47", pos: "投手（リリーフ・左腕）",
+    season: "27登板 0勝1敗 12ホールド 防御率0.70",
+    career: "西濃運輸から2023年ドラフト位で中日入団。制球力に優れた左のセットアッパー。",
+    history: "今季は27登板で防御率0.70・12ホールドと圧倒的な安定感。勝ちパターンに欠かせない左腕に成長した。" },
+  { name: "藤嶋 健人", initials: "藤嶋", number: "54", pos: "投手（リリーフ）",
+    season: "33登板 2勝2敗 7ホールド 防御率1.80",
+    career: "東邦高校から2016年ドラフト5位で中日入団。愛知県出身。タフネスが売りのリリーフ右腕。",
+    history: "毎年50試合以上に登板するブルペンの柱。今季もチーム最多の33登板・防御率1.80と獅子奮迅の働きを見せる。" },
+  { name: "橋本 侑樹", initials: "橋本", number: "13", pos: "投手（リリーフ・左腕）",
+    season: "18登板 1勝0敗 10ホールド 防御率1.00",
+    career: "大阪商業大学から2019年ドラフト2位で中日入団。岐阜県出身。角度ある速球が武器の左腕。",
+    history: "今季は18登板で防御率1.00・10ホールドと勝ちパターンに定着。左のセットアッパーとして飛躍のシーズンを送っている。" },
+  { name: "齋藤 綱記", initials: "齋藤", number: "59", pos: "投手（リリーフ・左腕）",
+    season: "32登板 2勝2敗 6ホールド 防御率3.16",
+    career: "北照高校からオリックス、日本ハムを経て中日へ。経験豊富な左のリリーフ。",
+    history: "移籍後にブルペンの一角として定着し、今季は32登板とフル回転。対左打者のスペシャリストとして重宝される。" },
+  { name: "マラー", initials: "M", number: "93", pos: "投手（先発・左腕）",
+    season: "10登板 2勝5敗 防御率2.86 49奪三振",
+    career: "アメリカ出身。201cmの長身から投げ下ろす速球が武器の大型左腕。",
+    history: "今季中日に加入し先発ローテ入り。防御率2.86と好投しながら援護に恵まれない試合が多いが、実力は本物。" },
+  { name: "メヒア", initials: "メヒア", number: "91", pos: "投手（リリーフ）",
+    season: "18登板 0勝1敗 4ホールド 防御率3.18",
+    career: "ドミニカ共和国出身。193cmの長身右腕リリーバー。",
+    history: "力のある速球を武器に中継ぎとして今季18登板。ブルペンに厚みを与える存在。" },
+  { name: "杉浦 稔大", initials: "杉浦", number: "33", pos: "投手（リリーフ）",
+    season: "11登板 1勝2敗 4ホールド 防御率6.52",
+    career: "國學院大学からヤクルト、日本ハムを経て今季4月に中日へ移籍したベテラン右腕。",
+    history: "日本ハム時代はクローザー経験もある実力者。移籍後はセットアッパー候補として登板を重ねている。" },
+  { name: "伊藤 茉央", initials: "伊藤", number: "32", pos: "投手（リリーフ）",
+    season: "12登板 0勝1敗 防御率2.79",
+    career: "東京農業大学北海道オホーツクから楽天を経て中日へ。サイドスローの技巧派右腕。",
+    history: "独特の角度から打者のタイミングを外す投球が持ち味。中継ぎ陣の一角として今季12登板。" },
+  { name: "牧野 憲伸", initials: "牧野", number: "68", pos: "投手（リリーフ・左腕）",
+    season: "20登板 0勝3敗 2ホールド 防御率3.68",
+    career: "育成ドラフトから今季3月に支配下登録を勝ち取った左腕。",
+    history: "支配下昇格後すぐに一軍ブルペン入りし、今季20登板と信頼を積み上げている。" },
+  { name: "草加 勝", initials: "草加", number: "14", pos: "投手",
+    season: "8登板 0勝1敗 1ホールド 防御率1.08",
+    career: "亜細亜大学から2023年ドラフト1位で中日入団。岡山県出身。完成度の高い投球が持ち味の右腕。",
+    history: "トミー・ジョン手術からのリハビリを乗り越えて一軍デビュー。今季8登板・防御率1.08と順調な回復ぶりを見せる。" },
+  { name: "中西 聖輝", initials: "中西", number: "11", pos: "投手（先発）",
+    season: "5登板 1勝2敗 防御率5.06 30奪三振",
+    career: "智辯和歌山高校→青山学院大学から2025年ドラフト1位で中日入団。和歌山県出身。大学日本一を経験した本格派右腕。",
+    history: "ルーキーの今季、先発として一軍デビューしプロ初勝利も記録。5試合で30奪三振と奪三振能力の高さが光る。" },
+  { name: "根尾 昂", initials: "根尾", number: "30", pos: "投手",
+    season: "9登板 1勝1敗 防御率5.00 13奪三振",
+    career: "大阪桐蔭高校から2018年ドラフト1位で中日入団。岐阜県出身。甲子園春夏連覇の立役者で、野手から投手に転向した二刀流経験者。",
+    history: "遊撃手としてプロ入り後、2022年に投手転向。最速150km/h超の速球を武器に、今季はプロ初勝利を含む1勝を挙げ投手として開花しつつある。" },
+  { name: "涌井 秀章", initials: "涌井", number: "20", pos: "投手（先発）",
+    season: "3登板 0勝0敗 防御率3.71 12奪三振",
+    career: "横浜高校から西武、ロッテ、楽天を経て中日へ。通算160勝超のレジェンド右腕。",
+    history: "最多勝4回（3球団で獲得はNPB史上初）、沢村賞1回。40歳を迎えてなお現役を続ける生ける伝説で、若手の手本となっている。" },
+  { name: "勝野 昌慶", initials: "勝野", number: "41", pos: "投手（リリーフ）",
+    season: "7登板 0勝2敗 防御率9.53",
+    career: "三菱重工名古屋から2018年ドラフト3位で中日入団。岐阜県出身。力強い速球が武器の右腕。",
+    history: "先発・中継ぎ両方で経験を積み、勝ちパターンを務めた実績もある。今季は状態を上げて巻き返しを図る。" },
+  { name: "梅野 雄吾", initials: "梅野", number: "46", pos: "投手（リリーフ）",
+    season: "2登板 防御率15.43",
+    career: "ヤクルトから移籍した経験豊富なリリーフ右腕。",
+    history: "ヤクルト時代は勝ちパターンで活躍した実績を持つ。復調して再びブルペンの主力になることが期待される。" },
+  { name: "松葉 貴大", initials: "松葉", number: "38", pos: "投手（先発・左腕）",
+    season: "2登板 0勝1敗 防御率4.91",
+    career: "大阪体育大学からオリックスを経て中日へ。ゲームメイク能力に長けたベテラン左腕。",
+    history: "先発の谷間を埋める貴重な存在として長年ローテーションを支えてきた。" },
+  { name: "清水 達也", initials: "清水", number: "50", pos: "投手（リリーフ）",
+    season: "4登板 防御率13.50",
+    career: "花咲徳栄高校から2017年ドラフト4位で中日入団。埼玉県出身。勝ちパターン経験豊富な右腕。",
+    history: "2023年前後はセットアッパーとしてフル回転した実績を持つ。故障から復帰し、本来の投球を取り戻すことが期待される。" },
+  { name: "櫻井 頼之介", initials: "櫻井", number: "16", pos: "投手（先発）",
+    season: "10登板 2勝4敗 防御率5.66 52奪三振",
+    career: "東北福祉大学から2024年ドラフト2位で中日入団。伸びのある速球が武器の若手右腕。",
+    history: "2年目の今季から先発ローテ入りし、10試合で52奪三振。粗削りながら将来性豊かな本格派。" },
+  { name: "仲地 礼亜", initials: "仲地", number: "26", pos: "投手（先発）",
+    season: "4登板 0勝0敗 防御率10.29",
+    career: "沖縄大学から2022年ドラフト1位で中日入団。沖縄県出身。キレのある変化球が持ち味の右腕。",
+    history: "ローテーション定着を目指して奮闘中。ファームで調整を重ねながら一軍のチャンスをうかがう。" },
+  { name: "福 敬登", initials: "福", number: "34", pos: "投手（リリーフ・左腕）",
+    season: "3登板 防御率3.86",
+    career: "JR九州から2018年ドラフト4位で中日入団。熊本県出身。実績ある左のリリーフ。",
+    history: "2020〜2021年には勝ちパターンの左腕としてフル回転した実績を持つベテラン。" },
+  { name: "近藤 廉", initials: "近藤", number: "70", pos: "投手（リリーフ・左腕）",
+    season: "3登板 防御率8.10",
+    career: "札幌学院大学から育成を経て支配下登録された左腕。",
+    history: "力のある直球を武器に、ブルペンの一角を狙って経験を積んでいる。" },
+  { name: "篠﨑 国忠", initials: "篠﨑", number: "52", pos: "投手",
+    season: "3登板 防御率3.38",
+    career: "修徳高校から2023年ドラフト位で中日入団。193cmの長身から投げ下ろす角度が武器の若手右腕。",
+    history: "高卒3年目の今季、一軍デビューを果たした期待の大型右腕。" },
+  { name: "アブレウ", initials: "A", number: "28", pos: "投手",
+    season: "4登板 1勝0敗 防御率10.80",
+    career: "ドミニカ共和国出身の剛腕右腕。今季1月に支配下登録された。",
+    history: "常時150km/h超の速球が武器。制球が安定すればブルペンの戦力になると期待される。" },
+];
+
+// 応援歌がある主な選手（YouTube検索へ）
+const songPlayers = new Set([
+  "岡林 勇希", "田中 幹也", "高橋 周平", "村松 開人", "福永 裕基",
+  "大島 洋平", "石川 昂弥", "細川 成也", "鵜飼 航丞", "土田 龍空",
+  "木下 拓哉", "板山 祐太郎", "石伊 雄太", "ボスラー"
+]);
+function songUrl(p) {
+  return "https://www.youtube.com/results?search_query=" +
+    encodeURIComponent("中日ドラゴンズ 応援歌 " + p.name.replace(/ /g, ""));
+}
+// 歌詞リンク（球団公式に選手応援歌ページがないため、YouTube検索と同じ扱い）
+const lyricsLinks = {};
+
+function renderPlayers(list, containerId) {
+  const container = document.getElementById(containerId);
+  const sorted = [...list].sort((a, b) => {
+    const na = parseInt(a.number), nb = parseInt(b.number);
+    if (isNaN(na) && isNaN(nb)) return a.name.localeCompare(b.name, "ja");
+    if (isNaN(na)) return 1;
+    if (isNaN(nb)) return -1;
+    return na - nb;
+  });
+  sorted.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'player-card';
+    let songBtn = songPlayers.has(p.name)
+      ? `<a class="song-link" href="${songUrl(p)}" target="_blank" rel="noopener">♪ 応援歌を聴く</a>`
+      : "";
+    if (lyricsLinks[p.name]) {
+      songBtn += ` <a class="song-link" href="${lyricsLinks[p.name]}" target="_blank" rel="noopener">📝 歌詞を見る</a>`;
+    }
+    card.innerHTML = `
+      <div class="avatar">
+        <span class="initials">${p.initials}</span>
+        <span class="number">#${p.number}</span>
+      </div>
+      <div class="player-info">
+        <div class="name">${p.name}</div>
+        <div class="pos">${p.pos}</div>
+        <div class="stats">${p.season.replace(/ /g, '<br>')}</div>
+        ${songBtn}
+      </div>`;
+    card.addEventListener('click', () => openModal(p));
+    card.querySelectorAll('.song-link').forEach(a => a.addEventListener('click', e => e.stopPropagation()));
+    container.appendChild(card);
+  });
+}
+
+const overlay = document.getElementById('modal-overlay');
+function openModal(p) {
+  document.getElementById('modal-name').textContent = `${p.name}  #${p.number}`;
+  document.getElementById('modal-sub').textContent = p.pos;
+  document.getElementById('modal-season').textContent = p.season;
+  document.getElementById('modal-career').textContent = p.career;
+  document.getElementById('modal-history').textContent = p.history;
+  const songEl = document.getElementById('modal-song');
+  let songHtml = songPlayers.has(p.name)
+    ? `<a class="song-link" href="${songUrl(p)}" target="_blank" rel="noopener">♪ YouTubeで応援歌を聴く</a>`
+    : "";
+  songEl.innerHTML = songHtml;
+  overlay.classList.add('open');
+}
+document.getElementById('modal-close').addEventListener('click', () => overlay.classList.remove('open'));
+overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+window.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.classList.remove('open'); });
+
+// ===== ページを開くたびにNPB公式から最新データを取得（r.jina.ai経由） =====
+const PROXY = "https://r.jina.ai/";
+const NPB = {
+  standings: "https://npb.jp/bis/2026/stats/std_c.html",
+  batting:   "https://npb.jp/bis/2026/stats/idb1_d.html",
+  pitching:  "https://npb.jp/bis/2026/stats/idp1_d.html",
+};
+const TEAM = "中日";
+
+function normalize(s) {
+  return (s || "").replace(/[\s　*]/g, "");
+}
+
+async function fetchMd(url) {
+  const res = await fetch(PROXY + url, { cache: "no-store" });
+  if (!res.ok) throw new Error("fetch failed: " + res.status);
+  return await res.text();
+}
+
+function parseMdTables(md) {
+  const tables = [];
+  let current = null;
+  for (const line of md.split("\n")) {
+    if (/^\|/.test(line.trim())) {
+      const cells = line.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim());
+      if (cells.every(c => /^-+$/.test(c) || c === "")) continue;
+      if (!current) { current = []; tables.push(current); }
+      current.push(cells);
+    } else {
+      current = null;
+    }
+  }
+  return tables;
+}
+
+async function updateStandings() {
+  const md = await fetchMd(NPB.standings);
+  const table = parseMdTables(md).find(t =>
+    t[0].includes("チーム") && t[0].includes("差"));
+  if (!table || table.length < 7) throw new Error("standings parse failed");
+
+  const tbody = document.getElementById("standings-body");
+  tbody.innerHTML = "";
+  const rows = table.slice(1, 7);
+  const leaders = rows.filter(c => c[6] === "--").length;
+  rows.forEach((cells, i) => {
+    const isOurs = cells[0].includes(TEAM);
+    const rank = cells[6] === "--" ? "1" : String(i + 1);
+    const row = document.createElement("tr");
+    if (isOurs) row.className = "ours";
+    row.innerHTML = [rank, ...cells.slice(0, 7)].map(c => `<td>${c}</td>`).join("");
+    tbody.appendChild(row);
+    if (isOurs) {
+      document.getElementById("sum-rank").textContent =
+        rank + "位" + (rank === "1" && leaders > 1 ? "T" : "");
+      document.getElementById("sum-wins").textContent = cells[2] + "勝";
+      document.getElementById("sum-ld").textContent = `${cells[3]}敗 ${cells[4]}分`;
+      document.getElementById("sum-pct").textContent = cells[5];
+      document.getElementById("sum-games").textContent = cells[1];
+      const played = parseInt(cells[1], 10);
+      if (!isNaN(played)) {
+        document.getElementById("sum-games-label").textContent =
+          `試合消化（残り${143 - played}試合）`;
+      }
+    }
+  });
+}
+
+function parseStatsMd(md) {
+  const map = {};
+  parseMdTables(md).forEach(table => {
+    const headers = table[0].map(normalize);
+    if (headers[0] !== "選手") return;
+    table.slice(1).forEach(cells => {
+      if (cells.length !== headers.length) return;
+      const name = normalize(cells[0]);
+      if (!name) return;
+      const stat = {};
+      headers.forEach((h, i) => stat[h] = cells[i]);
+      map[name] = stat;
+    });
+  });
+  return map;
+}
+
+async function updatePlayers() {
+  const [bMd, pMd] = await Promise.all([fetchMd(NPB.batting), fetchMd(NPB.pitching)]);
+  const bStats = parseStatsMd(bMd);
+  const pStats = parseStatsMd(pMd);
+
+  batters.forEach(p => {
+    const s = bStats[normalize(p.name)];
+    if (!s || !s["試合"]) return;
+    let str = `${s["試合"]}試合 打率${s["打率"]} ${s["本塁打"]}本塁打 ${s["打点"]}打点 ${s["安打"]}安打`;
+    if (parseInt(s["盗塁"]) > 0) str += ` ${s["盗塁"]}盗塁`;
+    p.season = str;
+  });
+
+  pitchers.forEach(p => {
+    const s = pStats[normalize(p.name)];
+    if (!s || !s["登板"]) return;
+    let str = `${s["登板"]}登板 ${s["勝利"]}勝${s["敗北"]}敗`;
+    if (parseInt(s["セーブ"]) > 0) str += ` ${s["セーブ"]}S`;
+    if (parseInt(s["ホールド"]) > 0) str += ` ${s["ホールド"]}H`;
+    str += ` 防御率${s["防御率"]} ${s["三振"]}奪三振`;
+    p.season = str;
+  });
+}
+
+// 次の試合・今後の日程
+const BROADCAST_BY_HOME = {
+  "中日":     "📺 主な中継（中日主催の通常パターン）: 東海テレビなど東海民放 ／ J SPORTS（CS） ／ DAZN（ネット配信）",
+  "阪神":     "📺 主な中継（阪神主催の通常パターン）: サンテレビ ／ MBS・ABCなど関西民放 ／ スカイA（CS） ／ DAZN（ネット配信）",
+  "巨人":     "📺 主な中継（巨人主催の通常パターン）: BS日テレ ／ 日テレジータス（CS） ／ DAZN（ネット配信）",
+  "ヤクルト": "📺 主な中継（ヤクルト主催の通常パターン）: フジテレビONE（CS） ／ DAZN（ネット配信）",
+  "DeNA":     "📺 主な中継（DeNA主催の通常パターン）: TBSチャンネル2（CS） ／ DAZN（ネット配信）",
+  "広島":     "📺 主な中継（広島主催の通常パターン）: RCC・広島民放 ／ J SPORTS（CS） ※DAZNでは配信なし",
+};
+
+function parseScheduleMd(md, month) {
+  const games = [];
+  let curDate = null;
+  for (const line of md.split("\n")) {
+    if (!/^\|/.test(line.trim())) continue;
+    const cells = line.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim());
+    let gameCell, venueCell;
+    if (/^\d+\/\d+/.test(cells[0])) {
+      curDate = cells[0];
+      gameCell = cells[1]; venueCell = cells[2];
+    } else {
+      gameCell = cells[0]; venueCell = cells[1];
+    }
+    if (!curDate || !gameCell || !gameCell.includes(TEAM)) continue;
+    if (/\[.*\]\(/.test(gameCell)) continue;
+    const m = gameCell.match(/^(\S+)\s*-\s*(\S+)$/);
+    if (!m) continue;
+    const venue = venueCell.replace(/!\[[\s\S]*$/, "").trim();
+    const vm = venue.match(/^(.*?)\s+(\d{1,2}:\d{2})$/);
+    games.push({
+      date: curDate, month,
+      home: m[1], away: m[2],
+      venue: vm ? vm[1].replace(/\s+/g, "") : venue,
+      time: vm ? vm[2] : "",
+    });
+  }
+  return games;
+}
+
+async function updateSchedule() {
+  const now = new Date();
+  let games = [];
+  for (let i = 0; i < 2 && games.length < 6; i++) {
+    const month = now.getMonth() + 1 + i;
+    if (month > 11) break;
+    const mm = String(month).padStart(2, "0");
+    try {
+      const md = await fetchMd(`https://npb.jp/games/2026/schedule_${mm}_detail.html`);
+      const monthGames = parseScheduleMd(md, month).filter(g => {
+        const day = parseInt(g.date.match(/\/(\d+)/)[1], 10);
+        return month > now.getMonth() + 1 || day >= now.getDate();
+      });
+      games = games.concat(monthGames);
+    } catch (e) { /* skip */ }
+  }
+  if (games.length === 0) throw new Error("schedule parse failed");
+
+  const next = games[0];
+  const opponent = next.home === TEAM ? next.away : next.home;
+  document.getElementById("ng-matchup").innerHTML =
+    `<span class="team team-name">${TEAM}</span><span class="vs">VS</span><span class="team">${opponent}</span>`;
+  const homeAway = next.home === TEAM ? "ホーム" : "ビジター";
+  document.getElementById("ng-detail").innerHTML =
+    `${next.month}月${next.date.replace(/^\d+\/(\d+)/, "$1日")} ${next.time} 開始 ｜ ${next.venue}（${homeAway}）`;
+  const bc = BROADCAST_BY_HOME[next.home];
+  if (bc) document.getElementById("ng-broadcast").textContent = bc;
+
+  const tbody = document.getElementById("schedule-body");
+  tbody.innerHTML = "";
+  games.slice(0, 6).forEach((g, i) => {
+    const row = document.createElement("tr");
+    if (i === 0) row.className = "ours";
+    row.innerHTML = `<td>${g.date}</td><td>${g.home} - ${g.away}</td><td>${g.venue}</td><td>${g.time}</td>`;
+    tbody.appendChild(row);
+  });
+}
+
+async function init() {
+  const dateEl = document.getElementById("data-date");
+  let ok = true;
+  try {
+    await Promise.all([updateStandings(), updatePlayers(), updateSchedule()]);
+  } catch (e) {
+    ok = false;
+    console.warn("最新データ取得に失敗:", e);
+  }
+  const now = new Date();
+  dateEl.textContent = ok
+    ? `${now.getMonth() + 1}月${now.getDate()}日 最新データ（NPB公式より自動取得）`
+    : "オフライン表示（2026年7月10日時点のデータ）";
+  renderPlayers(batters, 'batters');
+  renderPlayers(pitchers, 'pitchers');
+}
+init();
+</script>
+</body>
+</html>
