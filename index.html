@@ -580,18 +580,34 @@ const pitchers = [
     history: "常時150km/h超の速球が武器。制球が安定すればブルペンの戦力になると期待される。" },
 ];
 
-// 応援歌がある主な選手（YouTube検索へ）
-const songPlayers = new Set([
-  "岡林 勇希", "田中 幹也", "高橋 周平", "村松 開人", "福永 裕基",
-  "大島 洋平", "石川 昂弥", "細川 成也", "鵜飼 航丞", "土田 龍空",
-  "木下 拓哉", "板山 祐太郎", "石伊 雄太", "ボスラー"
-]);
-function songUrl(p) {
-  return "https://www.youtube.com/results?search_query=" +
-    encodeURIComponent("中日ドラゴンズ 応援歌 " + p.name.replace(/ /g, ""));
-}
-// 歌詞リンク（球団公式に選手応援歌ページがないため、YouTube検索と同じ扱い）
-const lyricsLinks = {};
+// 個人応援歌の動画URL（YouTube）
+const songLinks = {
+  "岡林 勇希":   "https://www.youtube.com/watch?v=0gcb-IaCmIk",
+  "田中 幹也":   "https://www.youtube.com/watch?v=fXPHi4N4FFA",
+  "高橋 周平":   "https://www.youtube.com/watch?v=LNTYB15JXuw",
+  "村松 開人":   "https://www.youtube.com/watch?v=0J8ZhD1IYk0",
+  "福永 裕基":   "https://www.youtube.com/watch?v=6VSnhLbVra0",
+  "大島 洋平":   "https://www.youtube.com/watch?v=WEbPIYOOClM",
+  "石川 昂弥":   "https://www.youtube.com/watch?v=N7DcjY2Gmlk",
+  "細川 成也":   "https://www.youtube.com/watch?v=1EkG9-BYIK8",
+  "鵜飼 航丞":   "https://www.youtube.com/watch?v=qTH9pDGvLB4",
+  "土田 龍空":   "https://www.youtube.com/watch?v=uxgVYIJYVaQ",
+  "木下 拓哉":   "https://www.youtube.com/watch?v=mgXo7sF5Qo4",
+  "石伊 雄太":   "https://www.youtube.com/watch?v=FaNuxKn5CmA",
+  "ボスラー":    "https://www.youtube.com/watch?v=LtD05hTzXuY",
+};
+const songPlayers = { has: name => name in songLinks };
+function songUrl(p) { return songLinks[p.name]; }
+
+// 歌詞ページ（中日ドラゴンズ応援団 公式サイト）
+const lyricsLinks = {
+  "岡林 勇希": "https://chunichiouendan.wixsite.com/dragonsouendan/%E5%BF%9C%E6%8F%B4%E6%AD%8C/okabayashi",
+  "細川 成也": "https://chunichiouendan.wixsite.com/dragonsouendan/%E5%BF%9C%E6%8F%B4%E6%AD%8C/hosokawa",
+  "村松 開人": "https://chunichiouendan.wixsite.com/dragonsouendan/%E5%BF%9C%E6%8F%B4%E6%AD%8C/muramatsu",
+  "田中 幹也": "https://chunichiouendan.wixsite.com/dragonsouendan/%E5%BF%9C%E6%8F%B4%E6%AD%8C/mikiya",
+  "鵜飼 航丞": "https://chunichiouendan.wixsite.com/dragonsouendan/%E5%BF%9C%E6%8F%B4%E6%AD%8C/ukai",
+  "石伊 雄太": "https://chunichiouendan.wixsite.com/dragonsouendan/%E5%BF%9C%E6%8F%B4%E6%AD%8C/ishii",
+};
 
 function renderPlayers(list, containerId) {
   const container = document.getElementById(containerId);
@@ -639,6 +655,9 @@ function openModal(p) {
   let songHtml = songPlayers.has(p.name)
     ? `<a class="song-link" href="${songUrl(p)}" target="_blank" rel="noopener">♪ YouTubeで応援歌を聴く</a>`
     : "";
+  if (lyricsLinks[p.name]) {
+    songHtml += ` <a class="song-link" href="${lyricsLinks[p.name]}" target="_blank" rel="noopener">📝 歌詞を見る（応援団公式）</a>`;
+  }
   songEl.innerHTML = songHtml;
   overlay.classList.add('open');
 }
