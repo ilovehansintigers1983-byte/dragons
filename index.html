@@ -17,15 +17,18 @@
     background: var(--d-navy);
     color: var(--d-white);
   }
-  /* 固定背景（ドーム夜空風グラデーション） */
+  /* ドアラの写真を固定背景に（スクロールしても動かない） */
   #bg {
     position: fixed;
     inset: 0;
     z-index: -1;
-    background:
-      radial-gradient(ellipse at 50% 110%, rgba(10,123,212,0.35), transparent 60%),
-      linear-gradient(180deg, #04101f 0%, #071a30 55%, #0a2440 100%);
-    background-color: var(--d-navy);
+    background: url("bg.jpg") center top / cover no-repeat var(--d-navy);
+  }
+  #bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(3, 11, 24, 0.5); /* 文字を読みやすくする暗幕 */
   }
   header {
     background: repeating-linear-gradient(90deg,
