@@ -125,20 +125,30 @@
     box-shadow: 0 6px 16px rgba(10,123,212,0.35);
   }
   .avatar {
-    height: 130px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    /* 写真の高さで枠の高さが決まる。min-heightは写真が無い選手のイニシャル表示用 */
+    min-height: 96px;
     position: relative;
     background: repeating-linear-gradient(135deg,
       #0c1a2c 0 18px, #122238 18px 36px);
     border-bottom: 3px solid var(--d-blue);
   }
   .avatar .initials {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     font-size: 2.4rem;
     font-weight: bold;
     color: var(--d-blue);
     text-shadow: 2px 2px 0 #000;
+  }
+  /* 球団公式の選手写真（読み込めない場合はイニシャル表示にフォールバック） */
+  .avatar .photo {
+    display: block;
+    position: relative; /* イニシャルの上に重ねる */
+    width: 100%;
+    height: auto;       /* 写真の高さで枠の高さが決まる（顔が切れない） */
+    background: #0c1a2c;
   }
   .avatar .number {
     position: absolute;
@@ -246,7 +256,6 @@
     .stat-card .label { font-size: 0.7rem; }
     th, td { padding: 6px 4px; font-size: 0.78rem; }
     .players { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .avatar { height: 96px; }
     .avatar .initials { font-size: 1.7rem; }
     .avatar .number { font-size: 0.85rem; }
     .player-info { padding: 8px 10px 10px; }
@@ -347,6 +356,7 @@
 <div id="modal-overlay">
   <div id="modal">
     <button id="modal-close">×</button>
+    <div id="modal-photo"></div>
     <h3 id="modal-name"></h3>
     <div class="sub" id="modal-sub"></div>
     <div class="section-title">今シーズン成績</div>
@@ -627,6 +637,37 @@ const lyricsLinks = {
   "石伊 雄太": "https://chunichiouendan.wixsite.com/dragonsouendan/%E5%BF%9C%E6%8F%B4%E6%AD%8C/ishii",
 };
 
+// 球団公式サイトの選手写真（ファイル名は選手ごとのローマ字表記）
+const photoSlugs = {
+  "中西 聖輝": "nakanishi_m", "橋本 侑樹": "hashimoto_y", "草加 勝": "kusaka_s",
+  "櫻井 頼之介": "sakurai_y", "柳 裕也": "yanagi_y", "髙橋 宏斗": "takahashi_h",
+  "涌井 秀章": "wakui_h", "金丸 夢斗": "kanemaru_y", "大野 雄大": "ono_y",
+  "仲地 礼亜": "nakachi_r", "アブレウ": "a_abreu", "根尾 昂": "neo_a",
+  "伊藤 茉央": "ito_m", "杉浦 稔大": "sugiura_t", "福 敬登": "fuku_h",
+  "松葉 貴大": "matsuba_t", "勝野 昌慶": "katsuno_a", "梅野 雄吾": "umeno_y",
+  "吉田 聖弥": "yoshida_s", "清水 達也": "shimizu_t", "篠﨑 国忠": "shinozaki_k",
+  "藤嶋 健人": "fujishima_k", "齋藤 綱記": "saito_k", "牧野 憲伸": "makino_k",
+  "近藤 廉": "kondo_r", "松山 晋也": "matsuyama_s", "メヒア": "h_mejia",
+  "マラー": "k_muller",
+  "石伊 雄太": "ishii_y", "木下 拓哉": "kinoshita_t", "味谷 大誠": "miya_t",
+  "加藤 匠馬": "kato_t", "石橋 康太": "ishibashi_k",
+  "辻本 倫太郎": "tsujimoto_r", "田中 幹也": "tanaka_m", "高橋 周平": "takahashi_s",
+  "カリステ": "o_calixte", "村松 開人": "muramatsu_k", "福永 裕基": "fukunaga_h",
+  "サノー": "m_sano", "石川 昂弥": "ishikawa_t", "土田 龍空": "tsuchida_r",
+  "阿部 寿樹": "abe_t", "山本 泰寛": "yamamoto_y", "板山 祐太郎": "itayama_y",
+  "知野 直人": "chino_n", "ロドリゲス": "c_rodriguez", "樋口 正修": "higuchi_s",
+  "尾田 剛樹": "oda_g", "岡林 勇希": "okabayashi_y", "大島 洋平": "oshima_y",
+  "ボスラー": "j_vosler", "ブライト 健太": "bright_k", "川越 誠司": "kawagoe_s",
+  "細川 成也": "hosokawa_s", "花田 旭": "hanada_a", "鵜飼 航丞": "ukai_k",
+};
+
+function photoTag(p) {
+  const slug = photoSlugs[p.name];
+  if (!slug) return "";
+  const url = `https://dragons.jp/teamdata/players/image/2026/${slug}_s.jpg`;
+  return `<img class="photo" src="${url}" alt="${p.name}" onerror="this.remove()">`;
+}
+
 function renderPlayers(list, containerId) {
   const container = document.getElementById(containerId);
   const sorted = [...list].sort((a, b) => {
@@ -648,6 +689,7 @@ function renderPlayers(list, containerId) {
     card.innerHTML = `
       <div class="avatar">
         <span class="initials">${p.initials}</span>
+        ${photoTag(p)}
         <span class="number">#${p.number}</span>
       </div>
       <div class="player-info">
@@ -664,6 +706,8 @@ function renderPlayers(list, containerId) {
 
 const overlay = document.getElementById('modal-overlay');
 function openModal(p) {
+  document.getElementById('modal-photo').innerHTML = photoTag(p)
+    .replace('class="photo"', 'style="width:110px;height:auto;border-radius:8px;border:2px solid var(--d-blue);float:left;margin:0 14px 8px 0;"');
   document.getElementById('modal-name').textContent = `${p.name}  #${p.number}`;
   document.getElementById('modal-sub').textContent = p.pos;
   document.getElementById('modal-season').textContent = p.season;
