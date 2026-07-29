@@ -165,6 +165,16 @@
   .player-info { padding: 10px 12px 12px; }
   .player-info .name { font-weight: bold; font-size: 1rem; }
   .player-info .pos { color: var(--d-blue); font-size: 0.75rem; margin: 2px 0 8px; }
+  .player-info .age { font-size: 0.78rem; color: #aaa; font-weight: normal; }
+  .player-info .salary {
+    font-size: 0.72rem;
+    color: #6ec1ff;
+    background: rgba(10, 123, 212, 0.18);
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin-bottom: 6px;
+    display: inline-block;
+  }
   .player-info .stats { font-size: 0.78rem; color: #ccc; line-height: 1.55; }
   .song-link {
     display: inline-block;
@@ -370,7 +380,7 @@
 </div>
 
 <footer>
-  成績データ出典: NPB.jp 日本野球機構（ページを開くたびに自動更新）｜ 個人利用の非公式ファンページ
+  成績データ出典: NPB.jp 日本野球機構（ページを開くたびに自動更新）｜ 年齢はNPB公式の生年月日から自動計算 ｜ 年俸は2026年の推定値（baseball-data.com）｜ 個人利用の非公式ファンページ
 </footer>
 
 <script>
@@ -668,6 +678,68 @@ function photoTag(p) {
   return `<img class="photo" src="${url}" alt="${p.name}" onerror="this.remove()">`;
 }
 
+// 生年月日（NPB公式より）と推定年俸（万円・2026年／baseball-data.com）
+const profiles = {
+  "中西 聖輝": ["2003.12.18", 160], "橋本 侑樹": ["1998.01.08", 390],
+  "草加 勝": ["2001.11.21", 110], "櫻井 頼之介": ["2003.07.21", 120],
+  "柳 裕也": ["1994.04.22", 2000], "髙橋 宏斗": ["2002.08.09", 2000],
+  "涌井 秀章": ["1986.06.21", 700], "金丸 夢斗": ["2003.02.01", 250],
+  "大野 雄大": ["1988.09.26", 1700], "仲地 礼亜": ["2001.02.15", 90],
+  "アブレウ": ["1995.09.26", 1500], "根尾 昂": ["2000.04.19", 105],
+  "伊藤 茉央": ["2000.11.19", 100], "杉浦 稔大": ["1992.02.25", 600],
+  "福 敬登": ["1992.06.16", 300], "松葉 貴大": ["1990.08.14", 1000],
+  "勝野 昌慶": ["1997.06.12", 330], "梅野 雄吾": ["1999.01.13", 250],
+  "吉田 聖弥": ["2002.05.23", 115], "清水 達也": ["1999.11.03", 1250],
+  "篠﨑 国忠": ["2005.06.12", 100], "藤嶋 健人": ["1998.05.08", 1200],
+  "齋藤 綱記": ["1996.12.18", 550], "牧野 憲伸": ["1999.09.19", 30],
+  "近藤 廉": ["1998.09.22", 90], "松山 晋也": ["2000.06.23", 1250],
+  "メヒア": ["1997.03.03", 1100], "マラー": ["1997.10.07", 1000],
+  "石伊 雄太": ["2000.08.18", 260], "木下 拓哉": ["1991.12.18", 700],
+  "味谷 大誠": ["2003.06.14", 61], "加藤 匠馬": ["1992.04.29", 225],
+  "石橋 康太": ["2000.12.07", 106], "辻本 倫太郎": ["2001.08.11", 95],
+  "田中 幹也": ["2000.11.28", 360], "高橋 周平": ["1994.01.18", 600],
+  "カリステ": ["1992.02.03", 900], "村松 開人": ["2001.01.06", 280],
+  "福永 裕基": ["1996.09.16", 270], "サノー": ["1993.05.11", 1500],
+  "石川 昂弥": ["2001.06.22", 230], "土田 龍空": ["2002.12.30", 130],
+  "阿部 寿樹": ["1989.12.03", 150], "山本 泰寛": ["1993.10.10", 350],
+  "板山 祐太郎": ["1994.03.27", 220], "知野 直人": ["1999.02.16", 100],
+  "ロドリゲス": ["2002.03.31", 150], "樋口 正修": ["1998.11.17", 80],
+  "尾田 剛樹": ["2000.08.03", 85], "岡林 勇希": ["2002.02.22", 1500],
+  "大島 洋平": ["1985.11.09", 600], "ボスラー": ["1993.09.06", 1500],
+  "ブライト 健太": ["1999.05.07", 220], "川越 誠司": ["1993.06.30", 140],
+  "細川 成也": ["1998.08.04", 1300], "花田 旭": ["2003.04.23", 72],
+  "鵜飼 航丞": ["1999.05.30", 105],
+};
+
+// 生年月日から現在の年齢を計算（誕生日を過ぎたら自動で1歳増える）
+function calcAge(birth) {
+  const [y, m, d] = birth.split(".").map(Number);
+  const now = new Date();
+  let age = now.getFullYear() - y;
+  const md = (now.getMonth() + 1) * 100 + now.getDate();
+  if (md < m * 100 + d) age--;
+  return age;
+}
+
+// 年俸を「1億2000万円」「5000万円」のように表記
+function formatSalary(man) {
+  if (man >= 10000) {
+    const oku = Math.floor(man / 10000);
+    const rest = man % 10000;
+    return rest ? `${oku}億${rest}万円` : `${oku}億円`;
+  }
+  return `${man.toLocaleString()}万円`;
+}
+
+function ageText(p) {
+  const pr = profiles[p.name];
+  return pr ? `<span class="age">（${calcAge(pr[0])}歳）</span>` : "";
+}
+function salaryText(p) {
+  const pr = profiles[p.name];
+  return pr && pr[1] ? `<div class="salary">推定年俸 ${formatSalary(pr[1])}</div>` : "";
+}
+
 function renderPlayers(list, containerId) {
   const container = document.getElementById(containerId);
   const sorted = [...list].sort((a, b) => {
@@ -693,8 +765,9 @@ function renderPlayers(list, containerId) {
         <span class="number">#${p.number}</span>
       </div>
       <div class="player-info">
-        <div class="name">${p.name}</div>
+        <div class="name">${p.name}${ageText(p)}</div>
         <div class="pos">${p.pos}</div>
+        ${salaryText(p)}
         <div class="stats">${p.season.replace(/ /g, '<br>')}</div>
         ${songBtn}
       </div>`;
@@ -709,7 +782,10 @@ function openModal(p) {
   document.getElementById('modal-photo').innerHTML = photoTag(p)
     .replace('class="photo"', 'style="width:110px;height:auto;border-radius:8px;border:2px solid var(--d-blue);float:left;margin:0 14px 8px 0;"');
   document.getElementById('modal-name').textContent = `${p.name}  #${p.number}`;
-  document.getElementById('modal-sub').textContent = p.pos;
+  const pr = profiles[p.name];
+  document.getElementById('modal-sub').textContent = p.pos +
+    (pr ? `　${calcAge(pr[0])}歳（${pr[0].replace(/\./g, "/")}生）` : "") +
+    (pr && pr[1] ? `　推定年俸 ${formatSalary(pr[1])}` : "");
   document.getElementById('modal-season').textContent = p.season;
   document.getElementById('modal-career').textContent = p.career;
   document.getElementById('modal-history').textContent = p.history;
