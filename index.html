@@ -388,7 +388,9 @@
 </footer>
 
 <script>
-const batters = [
+// 以下の配列は「経歴・実績の手書きデータ」と、名簿取得に失敗したときの予備データ。
+// 実際に表示する顔ぶれは NPB公式の在籍名簿から自動で組み立てる（updateRoster）。
+let batters = [
   { name: "岡林 勇希", initials: "岡林", number: "1", pos: "外野手",
     season: "32試合 打率.256 0本塁打 8打点 32安打 1盗塁",
     career: "菰野高校から2019年ドラフト5位で中日入団。三重県出身。広い守備範囲と俊足巧打が武器の不動のリードオフマン。",
@@ -507,7 +509,7 @@ const batters = [
     history: "今季一軍デビュー。パワーと強肩が魅力の育成出身選手。" },
 ];
 
-const pitchers = [
+let pitchers = [
   { name: "髙橋 宏斗", initials: "髙橋", number: "19", pos: "投手（先発）",
     season: "9登板 1勝6敗 防御率4.86 58奪三振",
     career: "中京大中京高校から2020年ドラフト1位で中日入団。愛知県出身。最速155km/h超の速球とスプリットを武器とするエース。",
@@ -675,8 +677,16 @@ const photoSlugs = {
   "細川 成也": "hosokawa_s", "花田 旭": "hanada_a", "鵜飼 航丞": "ukai_k",
 };
 
+// 経歴データを名前で引けるようにする（表記ゆれを吸収）
+const bios = {};
+[...batters, ...pitchers].forEach(p => { bios[p.name.replace(/[\s　]/g, "")] = p; });
+
+// 写真のファイル名対応表。球団公式から取得できれば新加入選手にも自動対応する
+const photoSlugByName = {};
+Object.keys(photoSlugs).forEach(k => { photoSlugByName[k.replace(/[\s　]/g, "")] = photoSlugs[k]; });
+
 function photoTag(p) {
-  const slug = photoSlugs[p.name];
+  const slug = photoSlugByName[p.name.replace(/[\s　]/g, "")];
   if (!slug) return "";
   const url = `https://dragons.jp/teamdata/players/image/2026/${slug}_s.jpg`;
   return `<img class="photo" src="${url}" alt="${p.name}" onerror="this.remove()">`;
@@ -735,13 +745,28 @@ function formatSalary(man) {
   return `${man.toLocaleString()}万円`;
 }
 
+// 年俸・生年月日も名前の表記ゆれを吸収して引けるようにする
+const salaryByName = {}, birthByName = {};
+Object.keys(profiles).forEach(k => {
+  const key = k.replace(/[\s　]/g, "");
+  birthByName[key] = profiles[k][0];
+  salaryByName[key] = profiles[k][1];
+});
+
+// 生年月日は名簿から取得した値を優先（新加入選手にも対応）
+function birthOf(p) {
+  return p.birth || birthByName[p.name.replace(/[\s　]/g, "")] || null;
+}
+function salaryOf(p) {
+  return salaryByName[p.name.replace(/[\s　]/g, "")] || null;
+}
 function ageText(p) {
-  const pr = profiles[p.name];
-  return pr ? `<span class="age">（${calcAge(pr[0])}歳）</span>` : "";
+  const b = birthOf(p);
+  return b ? `<span class="age">（${calcAge(b)}歳）</span>` : "";
 }
 function salaryText(p) {
-  const pr = profiles[p.name];
-  return pr && pr[1] ? `<div class="salary">推定年俸 ${formatSalary(pr[1])}</div>` : "";
+  const s = salaryOf(p);
+  return s ? `<div class="salary">推定年俸 ${formatSalary(s)}</div>` : "";
 }
 
 function renderPlayers(list, containerId) {
@@ -786,13 +811,13 @@ function openModal(p) {
   document.getElementById('modal-photo').innerHTML = photoTag(p)
     .replace('class="photo"', 'style="width:110px;height:auto;border-radius:8px;border:2px solid var(--d-blue);float:left;margin:0 14px 8px 0;"');
   document.getElementById('modal-name').textContent = `${p.name}  #${p.number}`;
-  const pr = profiles[p.name];
+  const b = birthOf(p), sal = salaryOf(p);
   document.getElementById('modal-sub').textContent = p.pos +
-    (pr ? `　${calcAge(pr[0])}歳（${pr[0].replace(/\./g, "/")}生）` : "") +
-    (pr && pr[1] ? `　推定年俸 ${formatSalary(pr[1])}` : "");
+    (b ? `　${calcAge(b)}歳（${b.replace(/\./g, "/")}生）` : "") +
+    (sal ? `　推定年俸 ${formatSalary(sal)}` : "");
   document.getElementById('modal-season').textContent = p.season;
-  document.getElementById('modal-career').textContent = p.career;
-  document.getElementById('modal-history').textContent = p.history;
+  document.getElementById('modal-career').textContent = p.career || "（準備中）";
+  document.getElementById('modal-history').textContent = p.history || "（準備中）";
   const songEl = document.getElementById('modal-song');
   let songHtml = songPlayers.has(p.name)
     ? `<a class="song-link" href="${songUrl(p)}" target="_blank" rel="noopener">♪ YouTubeで応援歌を聴く</a>`
@@ -892,28 +917,88 @@ function parseStatsMd(md) {
   return map;
 }
 
-async function updatePlayers() {
-  const [bMd, pMd] = await Promise.all([fetchMd(NPB.batting), fetchMd(NPB.pitching)]);
+// 成績を表示用の文字列に整形
+function battingLine(s) {
+  if (!s || !s["試合"]) return null;
+  let str = `${s["試合"]}試合 打率${s["打率"]} ${s["本塁打"]}本塁打 ${s["打点"]}打点 ${s["安打"]}安打`;
+  if (parseInt(s["盗塁"]) > 0) str += ` ${s["盗塁"]}盗塁`;
+  return str;
+}
+function pitchingLine(s) {
+  if (!s || !s["登板"]) return null;
+  let str = `${s["登板"]}登板 ${s["勝利"]}勝${s["敗北"]}敗`;
+  if (parseInt(s["セーブ"]) > 0) str += ` ${s["セーブ"]}S`;
+  if (parseInt(s["ホールド"]) > 0) str += ` ${s["ホールド"]}H`;
+  str += ` 防御率${s["防御率"]} ${s["三振"]}奪三振`;
+  return str;
+}
+
+// 球団公式サイトから写真のファイル名対応表を取得（新加入選手にも自動対応）
+async function updatePhotoSlugs() {
+  const md = await fetchMd("https://dragons.jp/teamdata/players/");
+  const re = /!\[[^\]]*\]\(https:\/\/dragons\.jp\/teamdata\/players\/image\/\d{4}\/([a-z_0-9]+)_s\.jpg[^)]*\)\s*\d+\s+([^\n\]]+?)\s+[A-Z]/g;
+  let m, count = 0;
+  while ((m = re.exec(md)) !== null) {
+    photoSlugByName[m[2].replace(/[\s　]/g, "")] = m[1];
+    count++;
+  }
+  if (count < 30) throw new Error("photo slug parse failed");
+}
+
+// NPB公式の在籍名簿（支配下＋育成）を取得してカードを組み立て直す
+async function updateRoster() {
+  const [rMd, bMd, pMd] = await Promise.all([
+    fetchMd("https://npb.jp/bis/teams/rst_d.html"),
+    fetchMd(NPB.batting),
+    fetchMd(NPB.pitching),
+  ]);
+  // 写真の対応表は取得に失敗しても致命的ではないので個別に処理
+  await updatePhotoSlugs().catch(e => console.warn("写真対応表の取得に失敗:", e));
+
   const bStats = parseStatsMd(bMd);
   const pStats = parseStatsMd(pMd);
 
-  batters.forEach(p => {
-    const s = bStats[normalize(p.name)];
-    if (!s || !s["試合"]) return;
-    let str = `${s["試合"]}試合 打率${s["打率"]} ${s["本塁打"]}本塁打 ${s["打点"]}打点 ${s["安打"]}安打`;
-    if (parseInt(s["盗塁"]) > 0) str += ` ${s["盗塁"]}盗塁`;
-    p.season = str;
-  });
+  // 名簿を解析（見出しにリンクが無いセクション＝育成選手）
+  const roster = [];
+  let pos = null, ikusei = false;
+  for (const line of rMd.split("\n")) {
+    const t = line.trim();
+    if (!/^\|/.test(t)) continue;
+    const cells = t.replace(/^\||\|$/g, "").split("|").map(c => c.trim());
+    if (cells[0] === "No.") {
+      const raw = cells[1] || "";
+      ikusei = !/\[[^\]]*\]\(/.test(raw);
+      pos = raw.replace(/\[([^\]]*)\]\([^)]*\)/, "$1");
+      continue;
+    }
+    if (!pos || pos === "監督") continue;
+    const nameM = (cells[1] || "").match(/\[([^\]]+)\]\(/);
+    if (!nameM || !cells[0]) continue;
+    roster.push({ name: nameM[1], number: cells[0], pos, birth: cells[2] || "", ikusei });
+  }
+  if (roster.length < 30) throw new Error("roster parse failed");
 
-  pitchers.forEach(p => {
-    const s = pStats[normalize(p.name)];
-    if (!s || !s["登板"]) return;
-    let str = `${s["登板"]}登板 ${s["勝利"]}勝${s["敗北"]}敗`;
-    if (parseInt(s["セーブ"]) > 0) str += ` ${s["セーブ"]}S`;
-    if (parseInt(s["ホールド"]) > 0) str += ` ${s["ホールド"]}H`;
-    str += ` 防御率${s["防御率"]} ${s["三振"]}奪三振`;
-    p.season = str;
+  const bat = [], pit = [];
+  roster.forEach(r => {
+    const bio = bios[normalize(r.name)] || {};
+    const isPitcher = r.pos === "投手";
+    const stat = isPitcher
+      ? pitchingLine(pStats[normalize(r.name)])
+      : battingLine(bStats[normalize(r.name)]);
+    const p = {
+      name: r.name,
+      number: r.number,
+      initials: bio.initials || r.name.split(/[\s　]/)[0],
+      pos: r.pos + (r.ikusei ? "（育成）" : ""),
+      birth: r.birth,
+      season: stat || "今季 一軍出場なし",
+      career: bio.career || "",
+      history: bio.history || "",
+    };
+    (isPitcher ? pit : bat).push(p);
   });
+  batters = bat;
+  pitchers = pit;
 }
 
 // 次の試合・今後の日程
@@ -1085,7 +1170,7 @@ async function init() {
   const dateEl = document.getElementById("data-date");
   let ok = true;
   try {
-    await Promise.all([updateStandings(), updatePlayers(), updateSchedule()]);
+    await Promise.all([updateStandings(), updateRoster(), updateSchedule()]);
   } catch (e) {
     ok = false;
     console.warn("最新データ取得に失敗:", e);
